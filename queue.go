@@ -5,13 +5,13 @@ import (
 	"time"
 )
 
-func New() *Queue {
+func NewQueue() *Queue {
 	return &Queue{
 		messages: make(map[int]*Message),
 	}
 }
 
-func NewInfinite(duration time.Duration) *Queue {
+func NewInfiniteQueue(duration time.Duration) *Queue {
 	return &Queue{
 		messages: make(map[int]*Message),
 		Infinite: true,
