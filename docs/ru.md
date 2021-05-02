@@ -3,8 +3,6 @@
 Пакет включает в себя реализацию компонента для работы с очередями, а так же простые, но эффективные инструменты, которые
 помогут просто и изящно построить многопоточные приложения.
 
-Данный пакет отлично подойдет для работы в приложениях с высококонкурентной средой, так как удовлетворяет thread-safety концепции.
-
 # Очереди (Queue)
 
 ### Базовое использование
@@ -19,9 +17,9 @@ import (
 )
 
 func main() {
-    q := queue.NewQueue()
-    q.Publish("my message 1")
-    q.Publish("my message 2")
+    q := queue.NewQueue(10)
+    go q.Publish("my message 1")
+    go q.Publish("my message 2")
     
     for {
         m := q.Consume()
@@ -48,9 +46,8 @@ import (
 )
 
 func main() {
-    q := queue.NewQueue()
-    q.Infinite = true 
-    q.Duration = 300 
+    q := queue.NewQueue(10)
+    q.Infinite = true
     
     go pushMessages(q, 1000)
     

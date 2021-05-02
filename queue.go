@@ -1,82 +1,70 @@
 package lika_queue
 
 import (
-	"sync"
-	"time"
+	"errors"
+	"fmt"
+	"github.com/lika_queue/brokers"
 )
 
-func NewQueue() *Queue {
-	return &Queue{
-		messages: make(map[int]*Message),
-	}
-}
-
-func NewInfiniteQueue(duration time.Duration) *Queue {
-	return &Queue{
-		messages: make(map[int]*Message),
-		Infinite: true,
-		Duration: duration,
-	}
+func New() *Queue {
+	return &Queue{brokers: make(map[string]brokers.BrokerInterface)}
 }
 
 type Queue struct {
-	Infinite bool
-	Duration time.Duration // duration time in milliseconds to waiting for a new message
-	messages map[int]*Message
-	offset   int
-	lock     sync.Mutex
+	defaultBrokerName string
+	brokers           map[string]brokers.BrokerInterface
 }
 
-func (q *Queue) Publish(message interface{}) {
-	q.lock.Lock()
-	defer q.lock.Unlock()
+func (q *Queue) Add(name string, connection brokers.BrokerInterface) {
+	q.brokers[name] = connection
 
-	q.offset++
-	q.messages[q.offset] = &Message{Data: message, id: q.offset, queue: q}
-}
-
-func (q *Queue) PublishMessage(message *Message) {
-	q.lock.Lock()
-	defer q.lock.Unlock()
-
-	q.messages[message.id] = message
-}
-
-func (q *Queue) Consume() *Message {
-	for {
-		q.lock.Lock()
-
-		if !q.HasMessages() {
-			q.lock.Unlock()
-
-			if q.Infinite {
-				time.Sleep(q.Duration * time.Millisecond)
-				continue
-			}
-
-			return nil
-		}
-
-		defer q.lock.Unlock()
-
-		return q.RemoveMessage(q.CurrentIndex())
+	if q.defaultBrokerName == "" {
+		q.defaultBrokerName = name
 	}
 }
 
-func (q *Queue) RemoveMessage(key int) *Message {
-	defer delete(q.messages, key)
-
-	return q.messages[key]
+func (q *Queue) GetDefaultBrokerName() string {
+	return q.defaultBrokerName
 }
 
-func (q *Queue) HasMessages() bool {
-	return q.Len() > 0
+func (q *Queue) MakeDefaultBroker(name string) (e error) {
+	if q.brokers[name] == nil {
+		return errors.New(fmt.Sprintf("Message Queue Broker named '%v' does not exist", name))
+	}
+
+	q.defaultBrokerName = name
+
+	return
 }
 
-func (q *Queue) Len() int {
-	return len(q.messages)
+func (q *Queue) Publish(queueName string, message interface{}, params map[string]interface{}) {
+	connection, err := q.GetDefaultBroker()
+
+	if err != nil {
+		panic("Default connection does not set")
+	}
+
+	connection.Publish(queueName, message, params)
 }
 
-func (q *Queue) CurrentIndex() int {
-	return q.offset - len(q.messages) + 1
+func (q *Queue) Consume(queueName string, params map[string]interface{}) *brokers.Message {
+	connection, err := q.GetDefaultBroker()
+
+	if err != nil {
+		panic("Default connection does not set")
+	}
+
+	return connection.Consume(queueName, params)
+}
+
+func (q *Queue) GetDefaultBroker() (brokers.BrokerInterface, error) {
+	return q.brokers[q.defaultBrokerName], q.checkConnection(q.defaultBrokerName)
+}
+
+func (q *Queue) checkConnection(name string) (e error) {
+	if q.brokers[name] == nil {
+		e = errors.New(fmt.Sprintf("Connection named '%v' does not exist", name))
+	}
+
+	return
 }

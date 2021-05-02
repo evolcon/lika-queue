@@ -1,10 +1,13 @@
 package lika_queue
 
-import "sync"
+import (
+	"github.com/lika_queue/brokers"
+	"sync"
+)
 
 type QueueWorker struct {
-	Queue    *Queue
-	Callable func(message *Message)
+	Queue    brokers.BrokerInterface
+	Callable func(message *brokers.Message)
 	Worker   *Worker
 }
 
@@ -13,11 +16,11 @@ func (qw *QueueWorker) Run() {
 	qw.Worker.Run()
 }
 
-func (qw *QueueWorker) consume() {
+func (qw *QueueWorker) consume(queueName string, params map[string]interface{}) {
 	for {
-		m := qw.Queue.Consume()
+		m := qw.Queue.Consume(queueName, params)
 
-		if m == nil {
+		if m == nil && !qw.Queue.IsInfinite() {
 			break
 		}
 
@@ -28,14 +31,14 @@ func (qw *QueueWorker) consume() {
 type Worker struct {
 	Threads     int
 	SyncThreads bool
-	Callable    func()
+	Callable    interface{}
 }
 
 func (w *Worker) Run() {
 	if w.Threads > 1 {
 		w.runMultiple()
 	} else {
-		w.Callable()
+		w.Callable.(func())()
 	}
 }
 
@@ -53,7 +56,7 @@ func (w *Worker) runMultiple() {
 		group.Wait()
 	} else {
 		for i < w.Threads {
-			go w.Callable()
+			go w.Callable.(func())()
 			i++
 		}
 	}
@@ -62,5 +65,5 @@ func (w *Worker) runMultiple() {
 func (w *Worker) runGroupThread(g *sync.WaitGroup) {
 	defer g.Done()
 
-	w.Callable()
+	w.Callable.(func())()
 }
