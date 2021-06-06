@@ -6,11 +6,11 @@ import (
 )
 
 var lock sync.Mutex
-var queues map[string]chan *brokers.Message
+var queues map[string]chan brokers.MessageInterface
 
 func init() {
 	lock = sync.Mutex{}
-	queues = make(map[string]chan *brokers.Message)
+	queues = make(map[string]chan brokers.MessageInterface)
 }
 
 type Broker struct {
@@ -18,44 +18,45 @@ type Broker struct {
 	len      int
 }
 
-func New(len int, infinite bool) *Broker {
+func New(len int, infinite bool) brokers.BrokerInterface {
 	return &Broker{
 		Infinite: infinite,
 		len:      len,
 	}
 }
 
-func (q *Broker) Publish(queue string, message interface{}, params map[string]interface{}) {
-	q.PublishMessage(queue, &brokers.Message{Data: message, MQ: q}, params)
+func (q *Broker) Publish(queue string, message interface{}, params map[string]interface{}) error {
+	return q.PublishMessage(queue, brokers.NewMessage(q, message, queue, make(map[string]interface{})), params)
 }
 
 func (q *Broker) IsInfinite() bool {
 	return q.Infinite
 }
 
-func (q *Broker) PublishMessage(queue string, message *brokers.Message, params map[string]interface{}) {
-	message.QueueName = queue
-	q.getOrCreateQueue(queue) <- message
+func (q *Broker) PublishMessage(queue string, message brokers.MessageInterface, params map[string]interface{}) error {
+	q.getOrCreateQueue(queue) <- brokers.NewMessage(q, message.GetData(), queue, message.GetMetaData())
+
+	return nil
 }
 
-func (q *Broker) Consume(queue string, params map[string]interface{}) *brokers.Message {
+func (q *Broker) Consume(queue string, params map[string]interface{}) (brokers.MessageInterface, error) {
 	mq := q.getOrCreateQueue(queue)
 
 	if !q.Infinite && len(mq) == 0 {
-		return nil
+		return nil, nil
 	}
 
-	return <-mq
+	return <-mq, nil
 }
 
-func (q *Broker) getOrCreateQueue(name string) chan *brokers.Message {
+func (q *Broker) getOrCreateQueue(name string) chan brokers.MessageInterface {
 	lock.Lock()
 	defer lock.Unlock()
 
 	channel, ok := queues[name]
 
 	if !ok {
-		channel = make(chan *brokers.Message, q.len)
+		channel = make(chan brokers.MessageInterface, q.len)
 		queues[name] = channel
 	}
 

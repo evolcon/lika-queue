@@ -6,8 +6,8 @@ import (
 )
 
 type QueueWorker struct {
-	Queue    brokers.BrokerInterface
-	Callable func(message *brokers.Message)
+	Broker   brokers.BrokerInterface
+	Callable func(message brokers.MessageInterface)
 	Worker   *Worker
 }
 
@@ -16,16 +16,22 @@ func (qw *QueueWorker) Run() {
 	qw.Worker.Run()
 }
 
-func (qw *QueueWorker) consume(queueName string, params map[string]interface{}) {
+func (qw *QueueWorker) consume(queueName string, params map[string]interface{}) error {
 	for {
-		m := qw.Queue.Consume(queueName, params)
+		m, err := qw.Broker.Consume(queueName, params)
 
-		if m == nil && !qw.Queue.IsInfinite() {
+		if err != nil {
+			return err
+		}
+
+		if m == nil && !qw.Broker.IsInfinite() {
 			break
 		}
 
 		qw.Callable(m)
 	}
+
+	return nil
 }
 
 type Worker struct {
