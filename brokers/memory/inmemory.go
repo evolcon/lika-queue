@@ -5,21 +5,17 @@ import (
 	"sync"
 )
 
-var lock sync.Mutex
-var queues map[string]chan queue.MessageInterface
-
-func init() {
-	lock = sync.Mutex{}
-	queues = make(map[string]chan queue.MessageInterface)
-}
-
 type Broker struct {
-	len int
+	len    int
+	lock   sync.Mutex
+	queues map[string]chan queue.MessageInterface
 }
 
 func New(len int) queue.BrokerInterface {
 	return &Broker{
-		len: len,
+		len:    len,
+		lock:   sync.Mutex{},
+		queues: make(map[string]chan queue.MessageInterface),
 	}
 }
 
@@ -40,14 +36,14 @@ func (q *Broker) Consume(queueName string, params map[string]interface{}) (queue
 }
 
 func (q *Broker) getOrCreateQueue(name string) chan queue.MessageInterface {
-	lock.Lock()
-	defer lock.Unlock()
+	q.lock.Lock()
+	defer q.lock.Unlock()
 
-	channel, ok := queues[name]
+	channel, ok := q.queues[name]
 
 	if !ok {
 		channel = make(chan queue.MessageInterface, q.len)
-		queues[name] = channel
+		q.queues[name] = channel
 	}
 
 	return channel
