@@ -39,12 +39,11 @@ func (q *Broker) getOrCreateQueue(name string) chan queue.MessageInterface {
 	q.lock.Lock()
 	defer q.lock.Unlock()
 
-	channel, ok := q.queues[name]
-
-	if !ok {
-		channel = make(chan queue.MessageInterface, q.len)
-		q.queues[name] = channel
+	if channel, ok := q.queues[name]; ok {
+		return channel
 	}
 
-	return channel
+	q.queues[name] = make(chan queue.MessageInterface, q.len)
+
+	return q.queues[name]
 }
