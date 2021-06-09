@@ -3,29 +3,42 @@ package lika_queue
 import (
 	"github.com/lika_queue/brokers"
 	"sync"
+	"time"
 )
 
 type QueueWorker struct {
-	Broker   brokers.BrokerInterface
-	Callable func(message brokers.MessageInterface)
-	Worker   *Worker
+	QueueName       string
+	Duration        time.Duration // milliseconds
+	ConsumingParams map[string]interface{}
+	Broker          brokers.BrokerInterface
+	Callable        func(message brokers.MessageInterface)
+	Worker          *Worker
+	IsInfinite      bool // if set false, message consuming will stop after getting first nil result from broker
 }
 
 func (qw *QueueWorker) Run() {
+	if qw.IsInfinite && qw.Duration <= 0 {
+		qw.Duration = 100
+	}
 	qw.Worker.Callable = qw.consume
 	qw.Worker.Run()
 }
 
-func (qw *QueueWorker) consume(queueName string, params map[string]interface{}) error {
+func (qw *QueueWorker) consume() error {
 	for {
-		m, err := qw.Broker.Consume(queueName, params)
+		m, err := qw.Broker.Consume(qw.QueueName, qw.ConsumingParams)
 
 		if err != nil {
 			return err
 		}
 
-		if m == nil && !qw.Broker.IsInfinite() {
-			break
+		if m == nil {
+			if qw.IsInfinite {
+				time.Sleep(qw.Duration * time.Millisecond)
+				continue
+			} else {
+				break
+			}
 		}
 
 		qw.Callable(m)
@@ -37,14 +50,14 @@ func (qw *QueueWorker) consume(queueName string, params map[string]interface{}) 
 type Worker struct {
 	Threads     int
 	SyncThreads bool
-	Callable    interface{}
+	Callable    func() error
 }
 
 func (w *Worker) Run() {
 	if w.Threads > 1 {
 		w.runMultiple()
 	} else {
-		w.Callable.(func())()
+		_ = w.Callable()
 	}
 }
 
@@ -62,7 +75,7 @@ func (w *Worker) runMultiple() {
 		group.Wait()
 	} else {
 		for i < w.Threads {
-			go w.Callable.(func())()
+			go w.Callable()
 			i++
 		}
 	}
@@ -71,5 +84,5 @@ func (w *Worker) runMultiple() {
 func (w *Worker) runGroupThread(g *sync.WaitGroup) {
 	defer g.Done()
 
-	w.Callable.(func())()
+	_ = w.Callable()
 }

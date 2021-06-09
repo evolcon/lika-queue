@@ -7,12 +7,19 @@ import (
 )
 
 type QueueInterface interface {
-	Add(name string, broker brokers.BrokerInterface)
+	// Add Add new one broker to pool
+	Add(brokerName string, broker brokers.BrokerInterface)
+	// GetDefaultBrokerName Returns default brokers name (key)
 	GetDefaultBrokerName() string
+	// MakeDefaultBroker Makes broker default by its name (key)
 	MakeDefaultBroker(brokerName string) (e error)
+	// Publish Sending message to default broker
 	Publish(queueName string, message interface{}, params map[string]interface{}) error
+	// Consume Consuming messages from default broker
 	Consume(queueName string, params map[string]interface{}) (brokers.MessageInterface, error)
+	// DefaultBroker Returns default broker
 	DefaultBroker() (brokers.BrokerInterface, error)
+	// Broker Returns broker by the name
 	Broker(brokerName string) (b brokers.BrokerInterface, e error)
 }
 
@@ -25,11 +32,11 @@ type Queue struct {
 	brokers           map[string]brokers.BrokerInterface
 }
 
-func (q *Queue) Add(name string, broker brokers.BrokerInterface) {
-	q.brokers[name] = broker
+func (q *Queue) Add(brokerName string, broker brokers.BrokerInterface) {
+	q.brokers[brokerName] = broker
 
 	if q.defaultBrokerName == "" {
-		q.defaultBrokerName = name
+		q.defaultBrokerName = brokerName
 	}
 }
 
@@ -48,23 +55,23 @@ func (q *Queue) MakeDefaultBroker(brokerName string) (e error) {
 }
 
 func (q *Queue) Publish(queueName string, message interface{}, params map[string]interface{}) error {
-	connection, err := q.DefaultBroker()
+	broker, err := q.DefaultBroker()
 
 	if err != nil {
-		panic("Default connection does not set")
+		panic("Default broker does not set")
 	}
 
-	return connection.Publish(queueName, message, params)
+	return broker.Publish(queueName, message, params)
 }
 
 func (q *Queue) Consume(queueName string, params map[string]interface{}) (brokers.MessageInterface, error) {
-	connection, err := q.DefaultBroker()
+	broker, err := q.DefaultBroker()
 
 	if err != nil {
-		panic("Default connection does not set")
+		panic("Default broker does not set")
 	}
 
-	return connection.Consume(queueName, params)
+	return broker.Consume(queueName, params)
 }
 
 func (q *Queue) DefaultBroker() (brokers.BrokerInterface, error) {

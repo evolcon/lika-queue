@@ -3,6 +3,57 @@
 Пакет включает в себя реализацию компонента для работы с очередями, а так же простые, но эффективные инструменты, которые
 помогут просто и изящно построить многопоточные приложения.
 
+# Базовый компонент
+
+Базовый компонент очередей используется для хранения и управления несколькими брокерами сообщений, а так же является промежуточным
+звеном между пользователем и конкретным брокером.
+
+Это позволяет в свою очередь иметь возможность использовать разные типы очередей для разных целей, и при необходимости 
+заменять одну на другую, не задумываясь о деталях реализации.
+
+```go
+
+package main
+
+import (
+	"fmt"
+	queue "github.com/lika_queue"
+	"github.com/lika_queue/brokers"
+	MemoryBroker "github.com/lika_queue/brokers/memory"
+)
+
+
+func main() {
+	basicUsage()
+}
+
+func basicUsage() {
+	var queueComponent queue.QueueInterface
+	var broker brokers.BrokerInterface
+
+	queueComponent = queue.New()
+	broker = MemoryBroker.New(10000, false)
+
+	queueComponent.Add("main", broker)
+
+	myMessage1 := "my string"
+	myMessage2 := map[string]interface{} {
+		"key1": "Vladimir",
+		"key2": "Petr",
+	}
+
+	_ = queueComponent.Publish("testQueue", myMessage1, nil)
+	_ = queueComponent.Publish("testQueue", myMessage2, nil)
+
+	message, _ := queueComponent.Consume("testQueue", nil)
+	message2, _ := queueComponent.Consume("testQueue", nil)
+
+	fmt.Println(message.GetData())
+	fmt.Println(message2.GetData())
+}
+
+
+```
 # Очереди (Queue)
 
 ### Базовое использование

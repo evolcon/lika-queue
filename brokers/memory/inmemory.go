@@ -14,27 +14,17 @@ func init() {
 }
 
 type Broker struct {
-	Infinite bool
-	len      int
+	len int
 }
 
-func New(len int, infinite bool) brokers.BrokerInterface {
+func New(len int) brokers.BrokerInterface {
 	return &Broker{
-		Infinite: infinite,
-		len:      len,
+		len: len,
 	}
 }
 
 func (q *Broker) Publish(queue string, message interface{}, params map[string]interface{}) error {
-	return q.PublishMessage(queue, brokers.NewMessage(q, message, queue, make(map[string]interface{})), params)
-}
-
-func (q *Broker) IsInfinite() bool {
-	return q.Infinite
-}
-
-func (q *Broker) PublishMessage(queue string, message brokers.MessageInterface, params map[string]interface{}) error {
-	q.getOrCreateQueue(queue) <- brokers.NewMessage(q, message.GetData(), queue, message.GetMetaData())
+	q.getOrCreateQueue(queue) <- brokers.NewMessage(q, message, queue, nil)
 
 	return nil
 }
@@ -42,7 +32,7 @@ func (q *Broker) PublishMessage(queue string, message brokers.MessageInterface, 
 func (q *Broker) Consume(queue string, params map[string]interface{}) (brokers.MessageInterface, error) {
 	mq := q.getOrCreateQueue(queue)
 
-	if !q.Infinite && len(mq) == 0 {
+	if len(mq) == 0 {
 		return nil, nil
 	}
 
