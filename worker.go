@@ -1,7 +1,6 @@
 package lika_queue
 
 import (
-	"github.com/lika_queue/brokers"
 	"sync"
 	"time"
 )
@@ -10,8 +9,8 @@ type QueueWorker struct {
 	QueueName       string
 	Duration        time.Duration // milliseconds
 	ConsumingParams map[string]interface{}
-	Broker          brokers.BrokerInterface
-	Callable        func(message brokers.MessageInterface)
+	Broker          BrokerInterface
+	Callable        func(message MessageInterface)
 	Worker          *Worker
 	IsInfinite      bool // if set false, message consuming will stop after getting first nil result from broker
 }

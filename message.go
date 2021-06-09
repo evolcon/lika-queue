@@ -1,4 +1,4 @@
-package brokers
+package lika_queue
 
 type MessageInterface interface {
 	GetData() interface{}

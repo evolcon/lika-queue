@@ -1,36 +1,36 @@
 package memory
 
 import (
-	"github.com/lika_queue/brokers"
+	queue "github.com/lika_queue"
 	"sync"
 )
 
 var lock sync.Mutex
-var queues map[string]chan brokers.MessageInterface
+var queues map[string]chan queue.MessageInterface
 
 func init() {
 	lock = sync.Mutex{}
-	queues = make(map[string]chan brokers.MessageInterface)
+	queues = make(map[string]chan queue.MessageInterface)
 }
 
 type Broker struct {
 	len int
 }
 
-func New(len int) brokers.BrokerInterface {
+func New(len int) queue.BrokerInterface {
 	return &Broker{
 		len: len,
 	}
 }
 
-func (q *Broker) Publish(queue string, message interface{}, params map[string]interface{}) error {
-	q.getOrCreateQueue(queue) <- brokers.NewMessage(q, message, queue, nil)
+func (q *Broker) Publish(queueName string, message interface{}, params map[string]interface{}) error {
+	q.getOrCreateQueue(queueName) <- queue.NewMessage(q, message, queueName, nil)
 
 	return nil
 }
 
-func (q *Broker) Consume(queue string, params map[string]interface{}) (brokers.MessageInterface, error) {
-	mq := q.getOrCreateQueue(queue)
+func (q *Broker) Consume(queueName string, params map[string]interface{}) (queue.MessageInterface, error) {
+	mq := q.getOrCreateQueue(queueName)
 
 	if len(mq) == 0 {
 		return nil, nil
@@ -39,14 +39,14 @@ func (q *Broker) Consume(queue string, params map[string]interface{}) (brokers.M
 	return <-mq, nil
 }
 
-func (q *Broker) getOrCreateQueue(name string) chan brokers.MessageInterface {
+func (q *Broker) getOrCreateQueue(name string) chan queue.MessageInterface {
 	lock.Lock()
 	defer lock.Unlock()
 
 	channel, ok := queues[name]
 
 	if !ok {
-		channel = make(chan brokers.MessageInterface, q.len)
+		channel = make(chan queue.MessageInterface, q.len)
 		queues[name] = channel
 	}
 
