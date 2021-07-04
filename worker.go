@@ -7,7 +7,7 @@ import (
 
 type QueueWorker struct {
 	QueueName       string
-	Duration        time.Duration // milliseconds
+	Duration        time.Duration // milliseconds. default 100 ms
 	ConsumingParams map[string]interface{}
 	Broker          BrokerInterface
 	Callable        func(message MessageInterface)

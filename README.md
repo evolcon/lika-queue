@@ -2,4 +2,4 @@
 
 Choose your language
 
-- [Russian](docs/ru.md)
+- [Russian](docs/ru/ru.md)
