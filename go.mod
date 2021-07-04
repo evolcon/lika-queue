@@ -1,3 +1,3 @@
-module github.com/lika_queue
+module github.com/evolcon/lika_queue
 
 go 1.15
