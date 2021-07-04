@@ -18,7 +18,6 @@ package main
 import (
 	"fmt"
 	queue "github.com/lika_queue"
-	MemoryBroker "github.com/lika_queue/brokers/memory"
 )
 
 func main() {
@@ -26,7 +25,7 @@ func main() {
 	var broker queue.BrokerInterface
 
 	queueComponent = queue.New()
-	broker = MemoryBroker.New(10000)
+	broker = queue.NewInMemoryBroker(10000)
 
 	queueComponent.Add("main", broker)
 
@@ -67,13 +66,12 @@ package main
 import (
 	"fmt"
 	queue "github.com/lika_queue"
-	MemoryBroker "github.com/lika_queue/brokers/memory"
 	"time"
 )
 
 func main() {
 	queueComponent := queue.New()
-	queueComponent.Add("mem", MemoryBroker.New(10000))
+	queueComponent.Add("mem", queue.NewInMemoryBroker(10000))
 
 	go publishMessages(queueComponent)
 
@@ -166,12 +164,11 @@ package main
 import (
 	"fmt"
 	queue "github.com/lika_queue"
-	MemoryBroker "github.com/lika_queue/brokers/memory"
 )
 
 func main() {
 	queueComponent := queue.New()
-	queueComponent.Add("mem", MemoryBroker.New(10000))
+	queueComponent.Add("mem", queue.NewInMemoryBroker(10000))
 
 	go publishMessages(queueComponent)
 
