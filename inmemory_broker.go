@@ -4,27 +4,27 @@ import (
 	"sync"
 )
 
-type Broker struct {
+type MemoryBroker struct {
 	len    int
 	lock   sync.Mutex
-	queues map[string]chan MessageInterface
+	queues map[string]chan MessageData
 }
 
-func NewInMemoryBroker(len int) BrokerInterface {
-	return &Broker{
+func NewMemoryBroker(len int) Broker {
+	return &MemoryBroker{
 		len:    len,
 		lock:   sync.Mutex{},
-		queues: make(map[string]chan MessageInterface),
+		queues: make(map[string]chan MessageData),
 	}
 }
 
-func (q *Broker) Publish(queueName string, message interface{}, params map[string]interface{}) error {
+func (q *MemoryBroker) Publish(queueName string, message interface{}, params map[string]interface{}) error {
 	q.getOrCreateQueue(queueName) <- NewMessage(q, message, queueName, nil)
 
 	return nil
 }
 
-func (q *Broker) Consume(queueName string, params map[string]interface{}) (MessageInterface, error) {
+func (q *MemoryBroker) Consume(queueName string, params map[string]interface{}) (MessageData, error) {
 	mq := q.getOrCreateQueue(queueName)
 
 	if len(mq) == 0 {
@@ -34,7 +34,7 @@ func (q *Broker) Consume(queueName string, params map[string]interface{}) (Messa
 	return <-mq, nil
 }
 
-func (q *Broker) getOrCreateQueue(name string) chan MessageInterface {
+func (q *MemoryBroker) getOrCreateQueue(name string) chan MessageData {
 	q.lock.Lock()
 	defer q.lock.Unlock()
 
@@ -42,7 +42,7 @@ func (q *Broker) getOrCreateQueue(name string) chan MessageInterface {
 		return channel
 	}
 
-	q.queues[name] = make(chan MessageInterface, q.len)
+	q.queues[name] = make(chan MessageData, q.len)
 
 	return q.queues[name]
 }

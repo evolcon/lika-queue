@@ -7,31 +7,31 @@ import (
 
 type QueueInterface interface {
 	// Add Add new one broker to pool
-	Add(brokerName string, broker BrokerInterface)
-	// GetDefaultBrokerName Returns default brokers name (key)
-	GetDefaultBrokerName() string
+	Add(brokerName string, broker Broker)
+	// DefaultBrokerName Returns default brokers name (key)
+	DefaultBrokerName() string
 	// MakeDefaultBroker Makes broker default by its name (key)
 	MakeDefaultBroker(brokerName string) (e error)
 	// Publish Sending message to default broker
 	Publish(queueName string, message interface{}, params map[string]interface{}) error
 	// Consume Consuming messages from default broker
-	Consume(queueName string, params map[string]interface{}) (MessageInterface, error)
+	Consume(queueName string, params map[string]interface{}) (MessageData, error)
 	// DefaultBroker Returns default broker
-	DefaultBroker() (BrokerInterface, error)
+	DefaultBroker() (Broker, error)
 	// Broker Returns broker by the name
-	Broker(brokerName string) (b BrokerInterface, e error)
+	Broker(brokerName string) (b Broker, e error)
 }
 
 func New() QueueInterface {
-	return &Queue{brokers: make(map[string]BrokerInterface)}
+	return &Queue{brokers: make(map[string]Broker)}
 }
 
 type Queue struct {
 	defaultBrokerName string
-	brokers           map[string]BrokerInterface
+	brokers           map[string]Broker
 }
 
-func (q *Queue) Add(brokerName string, broker BrokerInterface) {
+func (q *Queue) Add(brokerName string, broker Broker) {
 	q.brokers[brokerName] = broker
 
 	if q.defaultBrokerName == "" {
@@ -39,7 +39,7 @@ func (q *Queue) Add(brokerName string, broker BrokerInterface) {
 	}
 }
 
-func (q *Queue) GetDefaultBrokerName() string {
+func (q *Queue) DefaultBrokerName() string {
 	return q.defaultBrokerName
 }
 
@@ -63,7 +63,7 @@ func (q *Queue) Publish(queueName string, message interface{}, params map[string
 	return broker.Publish(queueName, message, params)
 }
 
-func (q *Queue) Consume(queueName string, params map[string]interface{}) (MessageInterface, error) {
+func (q *Queue) Consume(queueName string, params map[string]interface{}) (MessageData, error) {
 	broker, err := q.DefaultBroker()
 
 	if err != nil {
@@ -73,11 +73,11 @@ func (q *Queue) Consume(queueName string, params map[string]interface{}) (Messag
 	return broker.Consume(queueName, params)
 }
 
-func (q *Queue) DefaultBroker() (BrokerInterface, error) {
+func (q *Queue) DefaultBroker() (Broker, error) {
 	return q.Broker(q.defaultBrokerName)
 }
 
-func (q *Queue) Broker(brokerName string) (b BrokerInterface, e error) {
+func (q *Queue) Broker(brokerName string) (b Broker, e error) {
 	b, ok := q.brokers[brokerName]
 
 	if !ok {

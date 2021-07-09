@@ -25,7 +25,7 @@ func main() {
 	var broker queue.BrokerInterface
 
 	queueComponent = queue.New()
-	broker = queue.NewInMemoryBroker(10000)
+	broker = queue.NewMemoryBroker(10000)
 
 	queueComponent.Add("main", broker)
 
@@ -45,7 +45,7 @@ func main() {
 		message, _ := queueComponent.Consume("testQueue", nil)
 
 		if message != nil {
-			fmt.Println(message.GetData())
+			fmt.Println(message.Data())
 		} else {
 			break
 		}
@@ -71,7 +71,7 @@ import (
 
 func main() {
 	queueComponent := queue.New()
-	queueComponent.Add("mem", queue.NewInMemoryBroker(10000))
+	queueComponent.Add("mem", queue.NewMemoryBroker(10000))
 
 	go publishMessages(queueComponent)
 
@@ -97,7 +97,7 @@ func consumeMessages(queueComponent queue.QueueInterface, thread int) {
 		message, _ := queueComponent.Consume("testQueue", nil)
 
 		if message != nil {
-			fmt.Println(fmt.Sprintf("%s %d", message.GetData(), thread))
+			fmt.Println(fmt.Sprintf("%s %d", message.Data(), thread))
 		} else {
 			break
 		}
@@ -168,7 +168,7 @@ import (
 
 func main() {
 	queueComponent := queue.New()
-	queueComponent.Add("mem", queue.NewInMemoryBroker(10000))
+	queueComponent.Add("mem", queue.NewMemoryBroker(10000))
 
 	go publishMessages(queueComponent)
 
@@ -188,8 +188,8 @@ func main() {
 	worker.Run()
 }
 
-func myFunc(message queue.MessageInterface)  {
-	fmt.Println(message.GetData())
+func myFunc(message queue.MessageData)  {
+	fmt.Println(message.Data())
 }
 
 func publishMessages(queueComponent queue.QueueInterface) {

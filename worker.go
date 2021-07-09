@@ -9,8 +9,8 @@ type QueueWorker struct {
 	QueueName       string
 	Duration        time.Duration // milliseconds. default 100 ms
 	ConsumingParams map[string]interface{}
-	Broker          BrokerInterface
-	Callable        func(message MessageInterface)
+	Broker          Broker
+	Callable        func(message MessageData)
 	Worker          *Worker
 	IsInfinite      bool // if set false, message consuming will stop after getting first nil result from broker
 }

@@ -1,12 +1,12 @@
 package lika_queue
 
-type MessageInterface interface {
-	GetData() interface{}
-	GetMetaData() map[string]interface{}
-	GetQueueName() string
+type MessageData interface {
+	Data() interface{}
+	MetaData() map[string]interface{}
+	QueueName() string
 }
 
-func NewMessage(broker BrokerInterface, data interface{}, queueName string, metaData map[string]interface{}) MessageInterface {
+func NewMessage(broker Broker, data interface{}, queueName string, metaData map[string]interface{}) MessageData {
 	return &Message{
 		data:      data,
 		broker:    broker,
@@ -21,17 +21,17 @@ type Message struct {
 	retries   int
 	queueName string
 	done      bool
-	broker    BrokerInterface
+	broker    Broker
 }
 
-func (m *Message) GetMetaData() map[string]interface{} {
+func (m *Message) MetaData() map[string]interface{} {
 	return make(map[string]interface{})
 }
 
-func (m *Message) GetData() interface{} {
+func (m *Message) Data() interface{} {
 	return m.data
 }
 
-func (m *Message) GetQueueName() string {
+func (m *Message) QueueName() string {
 	return m.queueName
 }
